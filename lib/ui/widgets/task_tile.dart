@@ -7,6 +7,7 @@ class TaskTile extends StatelessWidget {
   final VoidCallback onToggle;
   final VoidCallback onDelete;
   final VoidCallback onEdit;
+  final VoidCallback onStatusChange;
 
   const TaskTile({
     super.key,
@@ -14,6 +15,7 @@ class TaskTile extends StatelessWidget {
     required this.onToggle,
     required this.onDelete,
     required this.onEdit,
+    required this.onStatusChange,
   });
 
   Color _getStatusColor(TaskStatus status) {
@@ -70,7 +72,7 @@ class TaskTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
-                task.status.name.toUpperCase(),
+                task.getStatusLabel().toUpperCase(),
                 style: TextStyle(
                   color: _getStatusColor(task.status),
                   fontSize: 10,
@@ -83,19 +85,26 @@ class TaskTile extends StatelessWidget {
         trailing: PopupMenuButton(
           itemBuilder: (context) => [
             const PopupMenuItem(
+              value: 'status',
+              child: Row(
+                children: [Icon(Icons.swap_horiz, size: 20), SizedBox(width: 8), Text('Cambiar Estado')],
+              ),
+            ),
+            const PopupMenuItem(
               value: 'edit',
               child: Row(
-                children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text('Edit')],
+                children: [Icon(Icons.edit, size: 20), SizedBox(width: 8), Text('Editar')],
               ),
             ),
             const PopupMenuItem(
               value: 'delete',
               child: Row(
-                children: [Icon(Icons.delete, size: 20, color: Colors.red), SizedBox(width: 8), Text('Delete', style: TextStyle(color: Colors.red))],
+                children: [Icon(Icons.delete, size: 20, color: Colors.red), SizedBox(width: 8), Text('Eliminar', style: TextStyle(color: Colors.red))],
               ),
             ),
           ],
           onSelected: (value) {
+            if (value == 'status') onStatusChange();
             if (value == 'edit') onEdit();
             if (value == 'delete') onDelete();
           },

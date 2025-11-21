@@ -23,22 +23,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   void _showTaskDialog([Task? task]) async {
-    final result = await showDialog<Map<String, String>>(
+    final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => TaskDialog(task: task),
     );
 
     if (result != null) {
       if (task == null) {
-        ref.read(taskProvider.notifier).addTask(result['title']!, result['description']!);
+        ref.read(taskProvider.notifier).addTask(
+          result['title']!,
+          result['description']!,
+          result['status'] as TaskStatus,
+        );
       } else {
         ref.read(taskProvider.notifier).updateTask(
               task.copyWith(
                 title: result['title'],
                 description: result['description'],
+                status: result['status'] as TaskStatus,
               ),
             );
       }
+    }
+  }
+
+  String _getFilterLabel(TaskFilter filter) {
+    switch (filter) {
+      case TaskFilter.all:
+        return 'Todas';
+      case TaskFilter.pending:
+        return 'Pendientes';
+      case TaskFilter.inProgress:
+        return 'En Progreso';
+      case TaskFilter.completed:
+        return 'Completadas';
     }
   }
 
@@ -46,6 +64,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     final taskState = ref.watch(taskProvider);
     final tasks = taskState.filteredTasks;
+
+    ref.listen(taskProvider, (previous, next) {
+      if (next.errorMessage != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next.errorMessage!), backgroundColor: Colors.red),
+        );
+      }
+    });
 
     return Scaffold(
       appBar: AppBar(
@@ -73,7 +99,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   padding: const EdgeInsets.only(right: 8),
                   child: FilterChip(
                     label: Text(
-                      filter.name.toUpperCase(),
+                      _getFilterLabel(filter),
                       style: TextStyle(
                         color: isSelected ? Colors.white : Colors.black87,
                         fontSize: 12,
@@ -110,7 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             Icon(Icons.task_alt, size: 64, color: Colors.grey[300]),
                             const SizedBox(height: 16),
                             Text(
-                              'No tasks found',
+                              'No se encontraron tareas',
                               style: GoogleFonts.poppins(
                                 fontSize: 18,
                                 color: Colors.grey[500],
@@ -140,6 +166,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 ref.read(taskProvider.notifier).deleteTask(task.id!);
                               },
                               onEdit: () => _showTaskDialog(task),
+                              onStatusChange: () => _showStatusChangeDialog(task),
                             );
                           },
                         ),
@@ -150,8 +177,40 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showTaskDialog(),
         icon: const Icon(Icons.add),
-        label: const Text('New Task'),
+        label: const Text('Nueva Tarea'),
       ),
     );
+  }
+
+  void _showStatusChangeDialog(Task task) async {
+    final newStatus = await showDialog<TaskStatus>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Cambiar Estado'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: TaskStatus.values.map((status) {
+            return RadioListTile<TaskStatus>(
+              title: Text(Task.getStatusLabelStatic(status)),
+              value: status,
+              groupValue: task.status,
+              onChanged: (value) {
+                Navigator.pop(context, value);
+              },
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+        ],
+      ),
+    );
+
+    if (newStatus != null && newStatus != task.status) {
+      ref.read(taskProvider.notifier).updateTask(task.copyWith(status: newStatus));
+    }
   }
 }

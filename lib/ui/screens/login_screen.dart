@@ -39,12 +39,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  String? _getFieldError(String fieldName) {
+    final validationErrors = ref.watch(authProvider).validationErrors;
+    return validationErrors?[fieldName];
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
     ref.listen(authProvider, (previous, next) {
-      if (next.errorMessage != null) {
+      if (next.errorMessage != null && next.validationErrors == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(next.errorMessage!), backgroundColor: Colors.red),
         );
@@ -72,7 +77,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _isLogin ? 'Welcome Back!' : 'Create Account',
+                  _isLogin ? '¡Bienvenido de nuevo!' : 'Crear Cuenta',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.poppins(
                     fontSize: 20,
@@ -83,40 +88,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 TextFormField(
                   controller: _usernameController,
                   decoration: InputDecoration(
-                    labelText: 'Username',
+                    labelText: 'Nombre de usuario',
                     prefixIcon: const Icon(Icons.person_outline),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
+                    errorText: _getFieldError('username'),
                   ),
-                  validator: (value) => value!.isEmpty ? 'Please enter username' : null,
+                  validator: (value) => value!.isEmpty ? 'Por favor ingresa tu nombre de usuario' : null,
                 ),
                 const SizedBox(height: 16),
                 if (!_isLogin) ...[
                   TextFormField(
                     controller: _emailController,
                     decoration: InputDecoration(
-                      labelText: 'Email',
+                      labelText: 'Correo electrónico',
                       prefixIcon: const Icon(Icons.email_outlined),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
+                      errorText: _getFieldError('email'),
                     ),
-                    validator: (value) => value!.isEmpty ? 'Please enter email' : null,
+                    validator: (value) => value!.isEmpty ? 'Por favor ingresa tu correo electrónico' : null,
                   ),
                   const SizedBox(height: 16),
                 ],
                 TextFormField(
                   controller: _passwordController,
                   decoration: InputDecoration(
-                    labelText: 'Password',
+                    labelText: 'Contraseña',
                     prefixIcon: const Icon(Icons.lock_outline),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
+                    errorText: _getFieldError('password'),
                   ),
                   obscureText: true,
-                  validator: (value) => value!.isEmpty ? 'Please enter password' : null,
+                  validator: (value) => value!.isEmpty ? 'Por favor ingresa tu contraseña' : null,
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
@@ -134,7 +142,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : Text(
-                          _isLogin ? 'Login' : 'Register',
+                          _isLogin ? 'Iniciar sesión' : 'Registrarse',
                           style: const TextStyle(fontSize: 16),
                         ),
                 ),
@@ -146,7 +154,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     });
                   },
                   child: Text(
-                    _isLogin ? 'Don\'t have an account? Register' : 'Already have an account? Login',
+                    _isLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión',
                   ),
                 ),
               ],

@@ -14,12 +14,14 @@ class _TaskDialogState extends State<TaskDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
+  late TaskStatus _selectedStatus;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.task?.title ?? '');
     _descriptionController = TextEditingController(text: widget.task?.description ?? '');
+    _selectedStatus = widget.task?.status ?? TaskStatus.pending;
   }
 
   @override
@@ -32,7 +34,7 @@ class _TaskDialogState extends State<TaskDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.task == null ? 'New Task' : 'Edit Task'),
+      title: Text(widget.task == null ? 'Nueva Tarea' : 'Editar Tarea'),
       content: Form(
         key: _formKey,
         child: Column(
@@ -40,14 +42,35 @@ class _TaskDialogState extends State<TaskDialog> {
           children: [
             TextFormField(
               controller: _titleController,
-              decoration: const InputDecoration(labelText: 'Title'),
-              validator: (value) => value!.isEmpty ? 'Please enter title' : null,
+              decoration: const InputDecoration(labelText: 'Título'),
+              validator: (value) => value!.isEmpty ? 'Por favor ingresa un título' : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Description'),
+              decoration: const InputDecoration(labelText: 'Descripción'),
               maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<TaskStatus>(
+              value: _selectedStatus,
+              decoration: const InputDecoration(
+                labelText: 'Estado',
+                border: OutlineInputBorder(),
+              ),
+              items: TaskStatus.values.map((status) {
+                return DropdownMenuItem(
+                  value: status,
+                  child: Text(Task.getStatusLabelStatic(status)),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedStatus = value;
+                  });
+                }
+              },
             ),
           ],
         ),
@@ -55,7 +78,7 @@ class _TaskDialogState extends State<TaskDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: const Text('Cancelar'),
         ),
         ElevatedButton(
           onPressed: () {
@@ -63,10 +86,11 @@ class _TaskDialogState extends State<TaskDialog> {
               Navigator.pop(context, {
                 'title': _titleController.text,
                 'description': _descriptionController.text,
+                'status': _selectedStatus,
               });
             }
           },
-          child: const Text('Save'),
+          child: const Text('Guardar'),
         ),
       ],
     );

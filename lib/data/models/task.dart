@@ -41,4 +41,26 @@ class Task {
       status: status ?? this.status,
     );
   }
+
+  String getStatusLabel() {
+    switch (status) {
+      case TaskStatus.pending:
+        return 'Pendiente';
+      case TaskStatus.inProgress:
+        return 'En Progreso';
+      case TaskStatus.completed:
+        return 'Completada';
+    }
+  }
+
+  static String getStatusLabelStatic(TaskStatus status) {
+    switch (status) {
+      case TaskStatus.pending:
+        return 'Pendiente';
+      case TaskStatus.inProgress:
+        return 'En Progreso';
+      case TaskStatus.completed:
+        return 'Completada';
+    }
+  }
 }

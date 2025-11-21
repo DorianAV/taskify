@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import '../data/models/task.dart';
+import '../data/models/api_error.dart';
 import '../data/repositories/task_repository.dart';
 import 'providers.dart';
 
@@ -9,12 +11,14 @@ class TaskState {
   final List<Task> tasks;
   final bool isLoading;
   final String? errorMessage;
+  final Map<String, String>? validationErrors;
   final TaskFilter filter;
 
   TaskState({
     this.tasks = const [],
     this.isLoading = false,
     this.errorMessage,
+    this.validationErrors,
     this.filter = TaskFilter.all,
   });
 
@@ -38,12 +42,14 @@ class TaskState {
     List<Task>? tasks,
     bool? isLoading,
     String? errorMessage,
+    Map<String, String>? validationErrors,
     TaskFilter? filter,
   }) {
     return TaskState(
       tasks: tasks ?? this.tasks,
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage,
+      validationErrors: validationErrors,
       filter: filter ?? this.filter,
     );
   }
@@ -54,22 +60,42 @@ class TaskNotifier extends StateNotifier<TaskState> {
 
   TaskNotifier(this._taskRepository) : super(TaskState());
 
+  String _extractErrorMessage(dynamic error) {
+    if (error is DioException && error.error is ApiException) {
+      return (error.error as ApiException).message;
+    }
+    return error.toString();
+  }
+
+  Map<String, String>? _extractValidationErrors(dynamic error) {
+    if (error is DioException && error.error is ApiException) {
+      return (error.error as ApiException).validationErrors;
+    }
+    return null;
+  }
+
   Future<void> fetchTasks() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
       final tasks = await _taskRepository.getTasks();
       state = state.copyWith(tasks: tasks, isLoading: false);
     } catch (e) {
-      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: _extractErrorMessage(e),
+      );
     }
   }
 
-  Future<void> addTask(String title, String description) async {
+  Future<void> addTask(String title, String description, TaskStatus status) async {
     try {
-      final newTask = await _taskRepository.createTask(title, description);
+      final newTask = await _taskRepository.createTask(title, description, status);
       state = state.copyWith(tasks: [...state.tasks, newTask]);
     } catch (e) {
-      state = state.copyWith(errorMessage: e.toString());
+      state = state.copyWith(
+        errorMessage: _extractErrorMessage(e),
+        validationErrors: _extractValidationErrors(e),
+      );
     }
   }
 
@@ -80,7 +106,10 @@ class TaskNotifier extends StateNotifier<TaskState> {
         tasks: state.tasks.map((t) => t.id == updatedTask.id ? updatedTask : t).toList(),
       );
     } catch (e) {
-      state = state.copyWith(errorMessage: e.toString());
+      state = state.copyWith(
+        errorMessage: _extractErrorMessage(e),
+        validationErrors: _extractValidationErrors(e),
+      );
     }
   }
 
@@ -91,7 +120,7 @@ class TaskNotifier extends StateNotifier<TaskState> {
         tasks: state.tasks.where((t) => t.id != id).toList(),
       );
     } catch (e) {
-      state = state.copyWith(errorMessage: e.toString());
+      state = state.copyWith(errorMessage: _extractErrorMessage(e));
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../models/api_error.dart';
 
 class ApiClient {
   final Dio _dio;
@@ -8,7 +9,7 @@ class ApiClient {
   ApiClient(this._storage)
       : _dio = Dio(
           BaseOptions(
-            baseUrl: 'https://a9104249552d.ngrok-free.app', // Android Emulator
+            baseUrl: 'https://8aff63b27abc.ngrok-free.app', // Android Emulator
             connectTimeout: const Duration(seconds: 5),
             receiveTimeout: const Duration(seconds: 3),
           ),
@@ -23,7 +24,22 @@ class ApiClient {
           return handler.next(options);
         },
         onError: (DioException e, handler) {
-          // Handle errors globally if needed
+          // Parse backend error response
+          if (e.response != null && e.response!.data != null) {
+            try {
+              final apiError = ApiError.fromJson(e.response!.data);
+              return handler.reject(
+                DioException(
+                  requestOptions: e.requestOptions,
+                  response: e.response,
+                  type: e.type,
+                  error: ApiException(apiError),
+                ),
+              );
+            } catch (_) {
+              // If parsing fails, continue with original error
+            }
+          }
           return handler.next(e);
         },
       ),
