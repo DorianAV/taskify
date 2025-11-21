@@ -1,27 +1,37 @@
-
 import 'package:flutter/material.dart';
-import 'package:taskify/screens/dashboard_screen.dart';
-import 'package:taskify/screens/home_screen.dart';
-import 'package:taskify/screens/login_screen.dart';
-import 'package:taskify/screens/register_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'router/app_router.dart';
 
-void main() => runApp(const MyApp());
+void main() {
+  runApp(const ProviderScope(child: TaskifyApp()));
+}
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class TaskifyApp extends ConsumerWidget {
+  const TaskifyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final router = ref.watch(routerProvider);
+
+    return MaterialApp.router(
       title: 'Taskify',
       debugShowCheckedModeBanner: false,
-      initialRoute: '/',
-      routes: {
-        '/': (context) => const HomeScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/register': (context) => const RegisterScreen(),
-        '/dashboard': (context) => const DashboardScreen(),
-      },
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF6C63FF), // Modern purple
+          primary: const Color(0xFF6C63FF),
+          secondary: const Color(0xFF03DAC6),
+        ),
+        useMaterial3: true,
+        textTheme: GoogleFonts.poppinsTextTheme(),
+        appBarTheme: const AppBarTheme(
+          centerTitle: true,
+          elevation: 0,
+          backgroundColor: Colors.transparent,
+        ),
+      ),
+      routerConfig: router,
     );
   }
 }
