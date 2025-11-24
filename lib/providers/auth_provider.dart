@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
 import '../data/repositories/auth_repository.dart';
-import '../data/models/api_error.dart';
+import '../utils/error_handler.dart';
 import 'providers.dart';
 
 enum AuthStatus { initial, authenticated, unauthenticated, loading }
@@ -50,44 +49,30 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  String _extractErrorMessage(dynamic error) {
-    if (error is DioException && error.error is ApiException) {
-      return (error.error as ApiException).message;
-    }
-    return error.toString();
-  }
 
-  Map<String, String>? _extractValidationErrors(dynamic error) {
-    if (error is DioException && error.error is ApiException) {
-      return (error.error as ApiException).validationErrors;
-    }
-    return null;
-  }
 
   Future<void> login(String username, String password) async {
-    state = state.copyWith(status: AuthStatus.loading);
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
       await _authRepository.login(username, password);
       state = state.copyWith(status: AuthStatus.authenticated);
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
-        errorMessage: _extractErrorMessage(e),
-        validationErrors: _extractValidationErrors(e),
+        errorMessage: ErrorHandler.getErrorMessage(e, isLogin: true),
       );
     }
   }
 
   Future<void> register(String username, String email, String password) async {
-    state = state.copyWith(status: AuthStatus.loading);
+    state = state.copyWith(status: AuthStatus.loading, errorMessage: null);
     try {
       await _authRepository.register(username, email, password);
       state = state.copyWith(status: AuthStatus.authenticated);
     } catch (e) {
       state = state.copyWith(
         status: AuthStatus.unauthenticated,
-        errorMessage: _extractErrorMessage(e),
-        validationErrors: _extractValidationErrors(e),
+        errorMessage: ErrorHandler.getErrorMessage(e, isRegister: true),
       );
     }
   }

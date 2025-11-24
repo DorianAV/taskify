@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
+
 import '../data/models/task.dart';
-import '../data/models/api_error.dart';
 import '../data/repositories/task_repository.dart';
+import '../utils/error_handler.dart';
 import 'providers.dart';
 
 enum TaskFilter { all, pending, inProgress, completed }
@@ -60,19 +60,7 @@ class TaskNotifier extends StateNotifier<TaskState> {
 
   TaskNotifier(this._taskRepository) : super(TaskState());
 
-  String _extractErrorMessage(dynamic error) {
-    if (error is DioException && error.error is ApiException) {
-      return (error.error as ApiException).message;
-    }
-    return error.toString();
-  }
 
-  Map<String, String>? _extractValidationErrors(dynamic error) {
-    if (error is DioException && error.error is ApiException) {
-      return (error.error as ApiException).validationErrors;
-    }
-    return null;
-  }
 
   Future<void> fetchTasks() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
@@ -82,7 +70,7 @@ class TaskNotifier extends StateNotifier<TaskState> {
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
-        errorMessage: _extractErrorMessage(e),
+        errorMessage: ErrorHandler.getErrorMessage(e),
       );
     }
   }
@@ -93,8 +81,7 @@ class TaskNotifier extends StateNotifier<TaskState> {
       state = state.copyWith(tasks: [...state.tasks, newTask]);
     } catch (e) {
       state = state.copyWith(
-        errorMessage: _extractErrorMessage(e),
-        validationErrors: _extractValidationErrors(e),
+        errorMessage: ErrorHandler.getErrorMessage(e),
       );
     }
   }
@@ -107,8 +94,7 @@ class TaskNotifier extends StateNotifier<TaskState> {
       );
     } catch (e) {
       state = state.copyWith(
-        errorMessage: _extractErrorMessage(e),
-        validationErrors: _extractValidationErrors(e),
+        errorMessage: ErrorHandler.getErrorMessage(e),
       );
     }
   }
@@ -120,7 +106,7 @@ class TaskNotifier extends StateNotifier<TaskState> {
         tasks: state.tasks.where((t) => t.id != id).toList(),
       );
     } catch (e) {
-      state = state.copyWith(errorMessage: _extractErrorMessage(e));
+      state = state.copyWith(errorMessage: ErrorHandler.getErrorMessage(e));
     }
   }
 
