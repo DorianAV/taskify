@@ -75,9 +75,20 @@ class TaskNotifier extends StateNotifier<TaskState> {
     }
   }
 
-  Future<void> addTask(String title, String description, TaskStatus status) async {
+  Future<void> addTask(String title, String description, TaskStatus status, String? date, String? time) async {
     try {
-      final newTask = await _taskRepository.createTask(title, description, status);
+      var newTask = await _taskRepository.createTask(title, description, status, date, time);
+      
+      // Workaround: If server ignores status (defaults to PENDING), update it immediately
+      if (newTask.status != status) {
+        final updatedTask = newTask.copyWith(status: status);
+        // We need the ID to update, assuming createTask returns a task with ID
+        if (updatedTask.id != null) {
+           await _taskRepository.updateTask(updatedTask);
+           newTask = updatedTask;
+        }
+      }
+      
       state = state.copyWith(tasks: [...state.tasks, newTask]);
     } catch (e) {
       state = state.copyWith(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:taskify/ui/screens/calendar_screen.dart';
 import '../../data/models/task.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/task_provider.dart';
@@ -34,6 +35,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           result['title']!,
           result['description']!,
           result['status'] as TaskStatus,
+          result['date'],
+          result['time'],
         );
       } else {
         ref.read(taskProvider.notifier).updateTask(
@@ -41,6 +44,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 title: result['title'],
                 description: result['description'],
                 status: result['status'] as TaskStatus,
+                date: result['date'],
+                time: result['time'],
               ),
             );
       }
@@ -80,6 +85,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_month),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const CalendarScreen()),
+            ),
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => ref.read(authProvider.notifier).logout(),

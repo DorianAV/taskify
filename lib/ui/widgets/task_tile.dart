@@ -64,6 +64,31 @@ class TaskTile extends StatelessWidget {
                   ),
                 ),
               ),
+            if (task.date != null || task.time != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Row(
+                  children: [
+                    if (task.date != null) ...[
+                      const Icon(Icons.calendar_today, size: 12, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        task.date!,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    if (task.time != null) ...[
+                      const Icon(Icons.access_time, size: 12, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        task.time!,
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

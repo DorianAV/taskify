@@ -17,12 +17,16 @@ class Task {
   final String title;
   final String description;
   final TaskStatus status;
+  final String? date;
+  final String? time;
 
   Task({
     this.id,
     required this.title,
     required this.description,
     required this.status,
+    this.date,
+    this.time,
   });
 
   factory Task.fromJson(Map<String, dynamic> json) => _$TaskFromJson(json);
@@ -33,12 +37,16 @@ class Task {
     String? title,
     String? description,
     TaskStatus? status,
+    String? date,
+    String? time,
   }) {
     return Task(
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
       status: status ?? this.status,
+      date: date ?? this.date,
+      time: time ?? this.time,
     );
   }
 

@@ -14,6 +14,8 @@ class _TaskDialogState extends State<TaskDialog> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
+  late TextEditingController _dateController;
+  late TextEditingController _timeController;
   late TaskStatus _selectedStatus;
 
   @override
@@ -21,6 +23,8 @@ class _TaskDialogState extends State<TaskDialog> {
     super.initState();
     _titleController = TextEditingController(text: widget.task?.title ?? '');
     _descriptionController = TextEditingController(text: widget.task?.description ?? '');
+    _dateController = TextEditingController(text: widget.task?.date ?? '');
+    _timeController = TextEditingController(text: widget.task?.time ?? '');
     _selectedStatus = widget.task?.status ?? TaskStatus.pending;
   }
 
@@ -28,6 +32,8 @@ class _TaskDialogState extends State<TaskDialog> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
+    _dateController.dispose();
+    _timeController.dispose();
     super.dispose();
   }
 
@@ -50,6 +56,58 @@ class _TaskDialogState extends State<TaskDialog> {
               controller: _descriptionController,
               decoration: const InputDecoration(labelText: 'Descripción'),
               maxLines: 3,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _dateController,
+                    decoration: const InputDecoration(
+                      labelText: 'Fecha',
+                      suffixIcon: Icon(Icons.calendar_today),
+                    ),
+                    readOnly: true,
+                    onTap: () async {
+                      final pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: DateTime.now(),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime(2100),
+                      );
+                      if (pickedDate != null) {
+                        setState(() {
+                          _dateController.text = pickedDate.toIso8601String().split('T')[0];
+                        });
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: _timeController,
+                    decoration: const InputDecoration(
+                      labelText: 'Hora',
+                      suffixIcon: Icon(Icons.access_time),
+                    ),
+                    readOnly: true,
+                    onTap: () async {
+                      final pickedTime = await showTimePicker(
+                        context: context,
+                        initialTime: TimeOfDay.now(),
+                      );
+                      if (pickedTime != null) {
+                        setState(() {
+                          final hour = pickedTime.hour.toString().padLeft(2, '0');
+                          final minute = pickedTime.minute.toString().padLeft(2, '0');
+                          _timeController.text = '$hour:$minute:00';
+                        });
+                      }
+                    },
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<TaskStatus>(
@@ -87,6 +145,8 @@ class _TaskDialogState extends State<TaskDialog> {
                 'title': _titleController.text,
                 'description': _descriptionController.text,
                 'status': _selectedStatus,
+                'date': _dateController.text.isEmpty ? null : _dateController.text,
+                'time': _timeController.text.isEmpty ? null : _timeController.text,
               });
             }
           },
