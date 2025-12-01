@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:taskify/ui/screens/calendar_screen.dart';
+import 'package:Taskify/ui/screens/calendar_screen.dart';
 import '../../data/models/task.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/task_provider.dart';

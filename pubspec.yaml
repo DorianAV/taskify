@@ -1,4 +1,4 @@
-name: taskify
+name: "Taskify"
 description: "Proyecto de desarrollo movil integral."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -53,6 +53,9 @@ dependencies:
   
   # Navigation
   go_router: ^14.6.0
+
+  # Icon
+  flutter_launcher_icons: ^0.13.1
 
 dev_dependencies:
   flutter_test:
@@ -111,3 +114,8 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/icon.png"
