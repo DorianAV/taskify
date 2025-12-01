@@ -1,4 +1,5 @@
 import 'package:json_annotation/json_annotation.dart';
+import 'package:flutter/material.dart';
 
 part 'task.g.dart';
 
@@ -11,6 +12,15 @@ enum TaskStatus {
   completed,
 }
 
+enum TaskPriority {
+  @JsonValue('HIGH')
+  high,
+  @JsonValue('MEDIUM')
+  medium,
+  @JsonValue('LOW')
+  low,
+}
+
 @JsonSerializable()
 class Task {
   final int? id;
@@ -19,6 +29,8 @@ class Task {
   final TaskStatus status;
   final String? date;
   final String? time;
+  final TaskPriority priority;
+  final String color; // Hex string e.g. "#FF0000"
 
   Task({
     this.id,
@@ -27,6 +39,8 @@ class Task {
     required this.status,
     this.date,
     this.time,
+    this.priority = TaskPriority.medium,
+    this.color = '#6C63FF', // Default purple
   });
 
   factory Task.fromJson(Map<String, dynamic> json) => _$TaskFromJson(json);
@@ -39,6 +53,8 @@ class Task {
     TaskStatus? status,
     String? date,
     String? time,
+    TaskPriority? priority,
+    String? color,
   }) {
     return Task(
       id: id ?? this.id,
@@ -47,6 +63,8 @@ class Task {
       status: status ?? this.status,
       date: date ?? this.date,
       time: time ?? this.time,
+      priority: priority ?? this.priority,
+      color: color ?? this.color,
     );
   }
 
@@ -69,6 +87,25 @@ class Task {
         return 'En Progreso';
       case TaskStatus.completed:
         return 'Completada';
+    }
+  }
+
+  String getPriorityLabel() {
+    switch (priority) {
+      case TaskPriority.high:
+        return 'Alta';
+      case TaskPriority.medium:
+        return 'Media';
+      case TaskPriority.low:
+        return 'Baja';
+    }
+  }
+
+  Color getParsedColor() {
+    try {
+      return Color(int.parse(color.replaceFirst('#', '0xFF')));
+    } catch (_) {
+      return const Color(0xFF6C63FF);
     }
   }
 }

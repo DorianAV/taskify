@@ -57,17 +57,9 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
           result['status'] as TaskStatus,
           date,
           result['time'],
+          result['priority'] as TaskPriority? ?? TaskPriority.medium,
+          result['color'] as String? ?? '#6C63FF',
         );
-      } else {
-        ref.read(taskProvider.notifier).updateTask(
-              task.copyWith(
-                title: result['title'],
-                description: result['description'],
-                status: result['status'] as TaskStatus,
-                date: result['date'],
-                time: result['time'],
-              ),
-            );
       }
     }
   }

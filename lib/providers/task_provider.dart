@@ -13,6 +13,7 @@ class TaskState {
   final String? errorMessage;
   final Map<String, String>? validationErrors;
   final TaskFilter filter;
+  final String searchQuery;
 
   TaskState({
     this.tasks = const [],
@@ -20,21 +21,38 @@ class TaskState {
     this.errorMessage,
     this.validationErrors,
     this.filter = TaskFilter.all,
+    this.searchQuery = '',
   });
 
   List<Task> get filteredTasks {
-    if (filter == TaskFilter.all) return tasks;
     return tasks.where((task) {
-      switch (filter) {
-        case TaskFilter.pending:
-          return task.status == TaskStatus.pending;
-        case TaskFilter.inProgress:
-          return task.status == TaskStatus.inProgress;
-        case TaskFilter.completed:
-          return task.status == TaskStatus.completed;
-        default:
-          return true;
+      // 1. Filter by Status
+      bool matchesStatus = true;
+      if (filter != TaskFilter.all) {
+        switch (filter) {
+          case TaskFilter.pending:
+            matchesStatus = task.status == TaskStatus.pending;
+            break;
+          case TaskFilter.inProgress:
+            matchesStatus = task.status == TaskStatus.inProgress;
+            break;
+          case TaskFilter.completed:
+            matchesStatus = task.status == TaskStatus.completed;
+            break;
+          default:
+            matchesStatus = true;
+        }
       }
+
+      // 2. Filter by Search Query
+      bool matchesQuery = true;
+      if (searchQuery.isNotEmpty) {
+        final query = searchQuery.toLowerCase();
+        matchesQuery = task.title.toLowerCase().contains(query) ||
+            task.description.toLowerCase().contains(query);
+      }
+
+      return matchesStatus && matchesQuery;
     }).toList();
   }
 
@@ -44,6 +62,7 @@ class TaskState {
     String? errorMessage,
     Map<String, String>? validationErrors,
     TaskFilter? filter,
+    String? searchQuery,
   }) {
     return TaskState(
       tasks: tasks ?? this.tasks,
@@ -51,6 +70,7 @@ class TaskState {
       errorMessage: errorMessage,
       validationErrors: validationErrors,
       filter: filter ?? this.filter,
+      searchQuery: searchQuery ?? this.searchQuery,
     );
   }
 }
@@ -59,8 +79,6 @@ class TaskNotifier extends StateNotifier<TaskState> {
   final TaskRepository _taskRepository;
 
   TaskNotifier(this._taskRepository) : super(TaskState());
-
-
 
   Future<void> fetchTasks() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
@@ -75,9 +93,9 @@ class TaskNotifier extends StateNotifier<TaskState> {
     }
   }
 
-  Future<void> addTask(String title, String description, TaskStatus status, String? date, String? time) async {
+  Future<void> addTask(String title, String description, TaskStatus status, String? date, String? time, TaskPriority priority, String color) async {
     try {
-      var newTask = await _taskRepository.createTask(title, description, status, date, time);
+      var newTask = await _taskRepository.createTask(title, description, status, date, time, priority, color);
       
       // Workaround: If server ignores status (defaults to PENDING), update it immediately
       if (newTask.status != status) {
@@ -123,6 +141,10 @@ class TaskNotifier extends StateNotifier<TaskState> {
 
   void setFilter(TaskFilter filter) {
     state = state.copyWith(filter: filter);
+  }
+
+  void setSearchQuery(String query) {
+    state = state.copyWith(searchQuery: query);
   }
 }
 

@@ -5,8 +5,11 @@ import 'package:Taskify/ui/screens/calendar_screen.dart';
 import '../../data/models/task.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/task_provider.dart';
+import '../../providers/theme_provider.dart';
 import '../widgets/task_tile.dart';
 import '../widgets/task_dialog.dart';
+import '../widgets/statistics_widget.dart';
+import '../widgets/empty_state_widget.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -16,6 +19,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
+
   @override
   void initState() {
     super.initState();
@@ -23,52 +28,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     Future.microtask(() => ref.read(taskProvider.notifier).fetchTasks());
   }
 
-  void _showTaskDialog([Task? task]) async {
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (context) => TaskDialog(task: task),
-    );
-
-    if (result != null) {
-      if (task == null) {
-        ref.read(taskProvider.notifier).addTask(
-          result['title']!,
-          result['description']!,
-          result['status'] as TaskStatus,
-          result['date'],
-          result['time'],
-        );
-      } else {
-        ref.read(taskProvider.notifier).updateTask(
-              task.copyWith(
-                title: result['title'],
-                description: result['description'],
-                status: result['status'] as TaskStatus,
-                date: result['date'],
-                time: result['time'],
-              ),
-            );
-      }
-    }
-  }
-
-  String _getFilterLabel(TaskFilter filter) {
-    switch (filter) {
-      case TaskFilter.all:
-        return 'Todas';
-      case TaskFilter.pending:
-        return 'Pendientes';
-      case TaskFilter.inProgress:
-        return 'En Progreso';
-      case TaskFilter.completed:
-        return 'Completadas';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final taskState = ref.watch(taskProvider);
     final tasks = taskState.filteredTasks;
+    final themeMode = ref.watch(themeProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     ref.listen(taskProvider, (previous, next) {
       if (next.errorMessage != null) {
@@ -86,6 +51,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         actions: [
           IconButton(
+            icon: Icon(themeMode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode),
+            onPressed: () => ref.read(themeProvider.notifier).toggleTheme(),
+          ),
+          IconButton(
             icon: const Icon(Icons.calendar_month),
             onPressed: () => Navigator.push(
               context,
@@ -100,10 +69,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
       body: Column(
         children: [
+          // Search Bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Buscar tareas...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                fillColor: isDark ? Colors.grey[800] : Colors.grey[100],
+                contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              ),
+              onChanged: (value) {
+                ref.read(taskProvider.notifier).setSearchQuery(value);
+              },
+            ),
+          ),
+          
+          // Statistics Widget
+          const StatisticsWidget(),
+          
           // Filter Chips
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               children: TaskFilter.values.map((filter) {
                 final isSelected = taskState.filter == filter;
@@ -113,21 +106,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     label: Text(
                       _getFilterLabel(filter),
                       style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black87,
+                        color: isSelected ? (isDark ? Colors.black : Colors.white) : (isDark ? Colors.white : Colors.black87),
                         fontSize: 12,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                     selected: isSelected,
                     onSelected: (_) {
                       ref.read(taskProvider.notifier).setFilter(filter);
                     },
-                    backgroundColor: Colors.grey[200],
+                    backgroundColor: isDark ? Colors.grey[800] : Colors.grey[200],
                     selectedColor: Theme.of(context).primaryColor,
-                    checkmarkColor: Colors.white,
+                    checkmarkColor: isDark ? Colors.black : Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(20),
                       side: BorderSide(
-                        color: isSelected ? Colors.transparent : Colors.grey[300]!,
+                        color: isSelected ? Colors.transparent : (isDark ? Colors.grey[700]! : Colors.grey[300]!),
                       ),
                     ),
                   ),
@@ -141,44 +135,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: taskState.isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : tasks.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.task_alt, size: 64, color: Colors.grey[300]),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No se encontraron tareas',
-                              style: GoogleFonts.poppins(
-                                fontSize: 18,
-                                color: Colors.grey[500],
-                              ),
-                            ),
-                          ],
-                        ),
+                    ? EmptyStateWidget(
+                        message: taskState.searchQuery.isNotEmpty 
+                            ? 'No se encontraron resultados' 
+                            : 'No tienes tareas pendientes',
+                        subMessage: taskState.searchQuery.isNotEmpty
+                            ? 'Intenta con otra búsqueda'
+                            : '¡Agrega una nueva tarea para comenzar!',
+                        icon: taskState.searchQuery.isNotEmpty ? Icons.search_off : Icons.task_alt,
                       )
                     : RefreshIndicator(
                         onRefresh: () => ref.read(taskProvider.notifier).fetchTasks(),
                         child: ListView.builder(
+                          key: _listKey,
                           padding: const EdgeInsets.all(16),
                           itemCount: tasks.length,
                           itemBuilder: (context, index) {
                             final task = tasks[index];
-                            return TaskTile(
-                              task: task,
-                              onToggle: () {
-                                final newStatus = task.status == TaskStatus.completed
-                                    ? TaskStatus.pending
-                                    : TaskStatus.completed;
-                                ref.read(taskProvider.notifier).updateTask(
-                                      task.copyWith(status: newStatus),
-                                    );
+                            return TweenAnimationBuilder<double>(
+                              tween: Tween(begin: 0, end: 1),
+                              duration: Duration(milliseconds: 300 + (index * 50)), // Staggered animation
+                              curve: Curves.easeOut,
+                              builder: (context, value, child) {
+                                return Transform.translate(
+                                  offset: Offset(0, 50 * (1 - value)),
+                                  child: Opacity(
+                                    opacity: value,
+                                    child: child,
+                                  ),
+                                );
                               },
-                              onDelete: () {
-                                ref.read(taskProvider.notifier).deleteTask(task.id!);
-                              },
-                              onEdit: () => _showTaskDialog(task),
-                              onStatusChange: () => _showStatusChangeDialog(task),
+                              child: TaskTile(
+                                task: task,
+                                onToggle: () {
+                                  final newStatus = task.status == TaskStatus.completed
+                                      ? TaskStatus.pending
+                                      : TaskStatus.completed;
+                                  ref.read(taskProvider.notifier).updateTask(
+                                        task.copyWith(status: newStatus),
+                                      );
+                                },
+                                onDelete: () {
+                                  ref.read(taskProvider.notifier).deleteTask(task.id!);
+                                },
+                                onEdit: () => _showTaskDialog(task),
+                                onStatusChange: () => _showStatusChangeDialog(task),
+                              ),
                             );
                           },
                         ),
@@ -192,6 +194,52 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         label: const Text('Nueva Tarea'),
       ),
     );
+  }
+
+  String _getFilterLabel(TaskFilter filter) {
+    switch (filter) {
+      case TaskFilter.all:
+        return 'Todas';
+      case TaskFilter.pending:
+        return 'Pendientes';
+      case TaskFilter.inProgress:
+        return 'En Progreso';
+      case TaskFilter.completed:
+        return 'Completadas';
+    }
+  }
+
+  void _showTaskDialog([Task? task]) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => TaskDialog(task: task),
+    );
+
+    if (result != null) {
+      if (task == null) {
+        ref.read(taskProvider.notifier).addTask(
+          result['title']!,
+          result['description']!,
+          result['status'] as TaskStatus,
+          result['date'],
+          result['time'],
+          result['priority'] as TaskPriority,
+          result['color']!,
+        );
+      } else {
+        ref.read(taskProvider.notifier).updateTask(
+              task.copyWith(
+                title: result['title'],
+                description: result['description'],
+                status: result['status'] as TaskStatus,
+                date: result['date'],
+                time: result['time'],
+                priority: result['priority'] as TaskPriority,
+                color: result['color'],
+              ),
+            );
+      }
+    }
   }
 
   void _showStatusChangeDialog(Task task) async {

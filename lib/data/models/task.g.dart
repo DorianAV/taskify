@@ -13,6 +13,10 @@ Task _$TaskFromJson(Map<String, dynamic> json) => Task(
   status: $enumDecode(_$TaskStatusEnumMap, json['status']),
   date: json['date'] as String?,
   time: json['time'] as String?,
+  priority:
+      $enumDecodeNullable(_$TaskPriorityEnumMap, json['priority']) ??
+      TaskPriority.medium,
+  color: json['color'] as String? ?? '#6C63FF',
 );
 
 Map<String, dynamic> _$TaskToJson(Task instance) => <String, dynamic>{
@@ -22,10 +26,18 @@ Map<String, dynamic> _$TaskToJson(Task instance) => <String, dynamic>{
   'status': _$TaskStatusEnumMap[instance.status]!,
   'date': instance.date,
   'time': instance.time,
+  'priority': _$TaskPriorityEnumMap[instance.priority]!,
+  'color': instance.color,
 };
 
 const _$TaskStatusEnumMap = {
   TaskStatus.pending: 'PENDING',
   TaskStatus.inProgress: 'IN_PROGRESS',
   TaskStatus.completed: 'COMPLETED',
+};
+
+const _$TaskPriorityEnumMap = {
+  TaskPriority.high: 'HIGH',
+  TaskPriority.medium: 'MEDIUM',
+  TaskPriority.low: 'LOW',
 };

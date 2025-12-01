@@ -10,13 +10,15 @@ class TaskRepository {
     return await _apiService.getTasks();
   }
 
-  Future<Task> createTask(String title, String description, TaskStatus status, String? date, String? time) async {
+  Future<Task> createTask(String title, String description, TaskStatus status, String? date, String? time, TaskPriority priority, String color) async {
     final task = Task(
       title: title,
       description: description,
       status: status,
       date: date,
       time: time,
+      priority: priority,
+      color: color,
     );
     return await _apiService.createTask(task);
   }
